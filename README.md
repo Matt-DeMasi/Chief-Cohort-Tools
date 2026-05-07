@@ -1,0 +1,1207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chief Capacity Forecast</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  :root{--bg:#0e0f13;--surface:#16181f;--surface2:#1e2028;--border:#2a2d38;--accent:#5b8ef0;--accent2:#3ecf8e;--warn:#f5a623;--danger:#e8504a;--purple:#bf86f5;--text:#e8eaf2;--text2:#8b8fa8;--text3:#555870;--mono:'DM Mono',monospace;--sans:'DM Sans',sans-serif;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;min-height:100vh;}
+  .shell{display:grid;grid-template-columns:220px 1fr;min-height:100vh;}
+  .sidebar{background:var(--surface);border-right:1px solid var(--border);padding:24px 0;position:sticky;top:0;height:100vh;overflow-y:auto;}
+  .main{padding:32px;overflow-x:hidden;}
+  .logo{padding:0 20px 24px;border-bottom:1px solid var(--border);margin-bottom:16px;}
+  .logo-title{font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);}
+  .logo-sub{font-size:11px;color:var(--text3);margin-top:2px;font-family:var(--mono);}
+  .nav-section{padding:0 12px;margin-bottom:8px;}
+  .nav-label{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);padding:8px 8px 4px;font-family:var(--mono);}
+  .nav-item{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:6px;cursor:pointer;font-size:13px;color:var(--text2);transition:all .15s;border:none;background:none;width:100%;text-align:left;}
+  .nav-item:hover{background:var(--surface2);color:var(--text);}
+  .nav-item.active{background:rgba(91,142,240,.12);color:var(--accent);}
+  .nav-dot{width:6px;height:6px;border-radius:50%;background:var(--text3);flex-shrink:0;}
+  .nav-item.active .nav-dot{background:var(--accent);}
+  .page-header{margin-bottom:28px;}
+  .page-title{font-size:22px;font-weight:600;letter-spacing:-.02em;}
+  .page-meta{font-size:12px;color:var(--text2);margin-top:4px;font-family:var(--mono);}
+  .metrics-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px;}
+  .metric-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 18px;}
+  .metric-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;font-family:var(--mono);margin-bottom:6px;}
+  .metric-val{font-size:26px;font-weight:600;letter-spacing:-.02em;}
+  .metric-val.danger{color:var(--danger);}.metric-val.warn{color:var(--warn);}.metric-val.good{color:var(--accent2);}
+  .metric-delta{font-size:11px;margin-top:4px;font-family:var(--mono);}
+  .metric-delta.up{color:var(--accent2);}.metric-delta.down{color:var(--danger);}.metric-delta.neutral{color:var(--text3);}
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;}
+  .card-title{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text2);margin-bottom:16px;font-family:var(--mono);}
+  .card.full{grid-column:1/-1;}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th{text-align:left;font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);padding:0 12px 10px;font-family:var(--mono);}
+  td{padding:9px 12px;border-top:1px solid var(--border);color:var(--text2);}
+  tr:hover td{background:var(--surface2);}
+  .td-name{color:var(--text);font-weight:500;}
+  .pill{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-family:var(--mono);font-weight:500;}
+  .pill.danger{background:rgba(232,80,74,.15);color:#f07b76;border:1px solid rgba(232,80,74,.3);}
+  .pill.warn{background:rgba(245,166,35,.15);color:#f5b84a;border:1px solid rgba(245,166,35,.3);}
+  .pill.good{background:rgba(62,207,142,.15);color:#4ed49b;border:1px solid rgba(62,207,142,.3);}
+  .pill.info{background:rgba(91,142,240,.15);color:#7aa5f3;border:1px solid rgba(91,142,240,.3);}
+  .pill.purple{background:rgba(191,134,245,.15);color:#bf86f5;border:1px solid rgba(191,134,245,.3);}
+  .chart-wrap{position:relative;height:220px;}
+  .input-section{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:24px;}
+  .input-section-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:16px;}
+  .input-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+  .input-group{display:flex;flex-direction:column;gap:6px;}
+  .input-label{font-size:11px;color:var(--text3);font-family:var(--mono);letter-spacing:.05em;}
+  .input-hint{font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:2px;}
+  input[type=number],input[type=text],select{background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:13px;padding:8px 10px;width:100%;outline:none;transition:border .15s;}
+  input:focus,select:focus{border-color:var(--accent);}
+  .btn{background:var(--accent);color:#fff;border:none;border-radius:6px;padding:9px 18px;font-size:13px;font-weight:500;cursor:pointer;font-family:var(--sans);transition:opacity .15s;}
+  .btn:hover{opacity:.85;}
+  .btn.ghost{background:var(--surface2);color:var(--text2);border:1px solid var(--border);}
+  .btn.ghost:hover{color:var(--text);}
+  .btn.dbtn{background:rgba(232,80,74,.2);color:#f07b76;border:1px solid rgba(232,80,74,.3);}
+  .btn-row{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;}
+  .upload-zone{border:1.5px dashed var(--border);border-radius:8px;padding:28px;text-align:center;cursor:pointer;transition:all .2s;}
+  .upload-zone:hover,.upload-zone.drag{border-color:var(--accent);background:rgba(91,142,240,.04);}
+  .upload-zone p{font-size:13px;color:var(--text2);margin-top:6px;}
+  .upload-hint{font-size:11px;color:var(--text3);margin-top:4px;font-family:var(--mono);}
+  .section-head{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.09em;color:var(--text3);font-family:var(--mono);margin:28px 0 14px;border-top:1px solid var(--border);padding-top:14px;}
+  .alert{border-radius:8px;padding:12px 16px;font-size:13px;margin-bottom:10px;display:flex;align-items:flex-start;gap:10px;border:1px solid;}
+  .alert.danger{background:rgba(232,80,74,.08);border-color:rgba(232,80,74,.25);color:#f07b76;}
+  .alert.warn{background:rgba(245,166,35,.08);border-color:rgba(245,166,35,.25);color:#f5b84a;}
+  .alert.info{background:rgba(91,142,240,.08);border-color:rgba(91,142,240,.25);color:#7aa5f3;}
+  .alert-icon{flex-shrink:0;font-size:15px;margin-top:1px;}
+  .alert-body strong{display:block;font-weight:600;margin-bottom:1px;}
+  .alert-body .sub{color:var(--text2);font-size:12px;}
+  .alert-body .meta{color:var(--text3);font-size:11px;font-family:var(--mono);margin-top:3px;}
+  .page{display:none;}.page.active{display:block;}
+  .range-group{display:flex;flex-direction:column;gap:6px;}
+  .range-row{display:flex;align-items:center;gap:10px;}
+  .range-row input[type=range]{flex:1;accent-color:var(--accent);cursor:pointer;}
+  .range-val{font-family:var(--mono);font-size:13px;color:var(--accent);min-width:44px;text-align:right;}
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:100;align-items:center;justify-content:center;}
+  .modal-overlay.open{display:flex;}
+  .modal{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:28px;width:520px;max-width:95vw;max-height:90vh;overflow-y:auto;}
+  .modal-title{font-size:16px;font-weight:600;margin-bottom:20px;}
+  .modal-footer{display:flex;gap:8px;margin-top:20px;justify-content:flex-end;}
+  .tag{display:inline-flex;align-items:center;padding:1px 7px;border-radius:10px;font-size:10px;font-family:var(--mono);font-weight:500;}
+  .tag.psych{background:rgba(91,142,240,.15);color:#7aa5f3;border:1px solid rgba(91,142,240,.25);}
+  .tag.pmhnp{background:rgba(191,134,245,.15);color:#bf86f5;border:1px solid rgba(191,134,245,.25);}
+  .tag.assoc{background:rgba(62,207,142,.12);color:#4ed49b;border:1px solid rgba(62,207,142,.25);}
+  .rec-card{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:10px;}
+  .rec-card.top{border-color:var(--accent2);background:rgba(62,207,142,.05);}
+  .rec-rank{font-size:10px;font-family:var(--mono);color:var(--text3);margin-bottom:4px;}
+  .rec-name{font-size:14px;font-weight:600;color:var(--text);}
+  .rec-detail{font-size:12px;color:var(--text2);margin-top:4px;}
+  .rec-bar{height:5px;border-radius:3px;background:var(--border);margin-top:8px;overflow:hidden;}
+  .rec-bar-fill{height:100%;border-radius:3px;}
+  .step-row{display:flex;gap:0;margin-bottom:28px;}
+  .step{flex:1;padding:10px 14px;font-size:12px;border-bottom:2px solid var(--border);color:var(--text3);font-family:var(--mono);}
+  .step.done{border-bottom-color:var(--accent2);color:var(--accent2);}
+  .step.active{border-bottom-color:var(--accent);color:var(--accent);}
+  .cr-row{display:grid;grid-template-columns:130px 80px 80px 80px 1fr 32px;gap:8px;align-items:center;margin-bottom:8px;}
+  td input.ie{background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:var(--mono);font-size:12px;padding:3px 7px;width:68px;}
+  td input.ie:focus{border-color:var(--accent);outline:none;}
+  tfoot td{border-top:2px solid var(--border);font-weight:600;color:var(--text);}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<nav class="sidebar">
+  <div class="logo"><div class="logo-title">Capacity Intel</div><div class="logo-sub">Chief Forecast · 2026</div></div>
+  <div class="nav-section">
+    <div class="nav-label">Overview</div>
+    <button class="nav-item active" onclick="showPage('dashboard',this)"><span class="nav-dot"></span>Dashboard</button>
+    <button class="nav-item" onclick="showPage('forecast',this)"><span class="nav-dot"></span>Forecast vs Budget</button>
+    <button class="nav-item" onclick="showPage('ta',this)"><span class="nav-dot"></span>TA Projections</button>
+    <button class="nav-item" onclick="showPage('chiefs',this)"><span class="nav-dot"></span>Chief Caseloads</button>
+  </div>
+  <div class="nav-section">
+    <div class="nav-label">Planning</div>
+    <button class="nav-item" onclick="showPage('alerts',this)"><span class="nav-dot"></span>Capacity Alerts</button>
+    <button class="nav-item" onclick="showPage('hiring',this)"><span class="nav-dot"></span>Hiring Triggers</button>
+    <button class="nav-item" onclick="showPage('assign',this)"><span class="nav-dot"></span>Cohort Assignment</button>
+  </div>
+  <div class="nav-section">
+    <div class="nav-label">Data</div>
+    <button class="nav-item" onclick="showPage('manage',this)"><span class="nav-dot"></span>Manage Chiefs</button>
+    <button class="nav-item" onclick="showPage('inputs',this)"><span class="nav-dot"></span>Manual Inputs</button>
+  </div>
+</nav>
+
+<main class="main">
+
+<!-- DASHBOARD -->
+<div id="page-dashboard" class="page active">
+  <div class="page-header"><div class="page-title">Capacity Overview</div><div class="page-meta">May 7, 2026 · Finance budget varies by quarter (from ramp model) · New Assoc. Chief started Jun 1</div></div>
+
+  <!-- Next hire recommendation banner -->
+  <div id="d-hire-banner" style="margin-bottom:20px"></div>
+
+  <div class="metrics-row">
+    <div class="metric-card"><div class="metric-label">Finance Budget (Q3)</div><div class="metric-val">139</div><div class="metric-delta neutral">from ramp model</div></div>
+    <div class="metric-card"><div class="metric-label">Q3 Actual starts</div><div class="metric-val warn" id="d-q3">115</div><div class="metric-delta down" id="d-q3d">-17% vs budget</div></div>
+    <div class="metric-card"><div class="metric-label">TA Q4 projection</div><div class="metric-val" id="d-ta">59</div><div class="metric-delta neutral">vs 78 Q4 budget</div></div>
+    <div class="metric-card"><div class="metric-label">Chiefs over cap</div><div class="metric-val danger" id="d-oc">—</div><div class="metric-delta neutral" id="d-oc-sub">patient-carrying chiefs</div></div>
+  </div>
+  <div class="grid-2">
+    <div class="card"><div class="card-title">Forecast vs Budget — Quarterly</div><div id="d-qrows"></div></div>
+    <div class="card"><div class="card-title">Chief caseload vs max (June)</div><div class="chart-wrap"><canvas id="chiefBarChart"></canvas></div></div>
+  </div>
+  <div class="card full"><div class="card-title">Provider starts — monthly 2026 YTD</div><div class="chart-wrap" style="height:175px"><canvas id="monthlyChart"></canvas></div></div>
+</div>
+
+<!-- FORECAST -->
+<div id="page-forecast" class="page">
+  <div class="page-header"><div class="page-title">Forecast vs Budget</div><div class="page-meta">Finance baseline · YTD actuals · Updated projections · Chief HC ratios</div></div>
+  <div class="metrics-row">
+    <div class="metric-card"><div class="metric-label">Annual Budget</div><div class="metric-val" id="fc-ab">320</div><div class="metric-delta neutral">80 × 4 quarters</div></div>
+    <div class="metric-card"><div class="metric-label">YTD Actuals Q1–Q3</div><div class="metric-val warn" id="fc-ytd">431</div><div class="metric-delta down" id="fc-ytdd">+34.7% vs budget YTD</div></div>
+    <div class="metric-card"><div class="metric-label">Full Year Proj.</div><div class="metric-val" id="fc-fy">~478</div><div class="metric-delta down">+49% vs annual budget</div></div>
+    <div class="metric-card"><div class="metric-label">TA Q4 Pipeline</div><div class="metric-val" id="fc-ta">135</div><div class="metric-delta down">+69% vs Q4 budget</div></div>
+  </div>
+  <div class="card full" style="margin-bottom:24px"><div class="card-title">4-Layer view: Budget · Actuals · Projection · TA Pipeline</div><div class="chart-wrap" style="height:260px"><canvas id="forecastChart"></canvas></div></div>
+  <div class="section-head">Provider type breakdown</div>
+  <div class="card full" style="margin-bottom:24px">
+    <table><thead><tr><th>Provider Type</th><th>Q1 Actual</th><th>Q2 Actual</th><th>Q3 Actual</th><th>Q4 Proj</th><th>Full Year</th><th>vs Budget</th></tr></thead>
+    <tbody>
+      <tr><td class="td-name">Psych MD/DO</td><td>50</td><td>35</td><td>57</td><td>~26</td><td>~168</td><td><span class="pill good">On track</span></td></tr>
+      <tr><td class="td-name">PMHNP</td><td>21</td><td>20</td><td>17</td><td>~9</td><td>~67</td><td><span class="pill warn">Below TA proj</span></td></tr>
+      <tr><td class="td-name">Therapy</td><td>70</td><td>136</td><td>25</td><td>~12</td><td>~243</td><td><span class="pill warn">Declining</span></td></tr>
+      <tr style="font-weight:600;color:var(--text)"><td class="td-name">Overall</td><td>141</td><td>191</td><td id="fc-q3">99</td><td id="fc-q4">~47</td><td id="fc-tot">~478</td><td><span class="pill danger">+49% over budget</span></td></tr>
+    </tbody></table>
+  </div>
+  <div class="section-head">Chief HC ratio analysis</div>
+  <div class="card full">
+    <div style="font-size:13px;color:var(--text2);margin-bottom:16px">Psych Chief max: <strong style="color:var(--text)">95</strong> (stretch 100). PMHNP Chief max: <strong style="color:var(--text)">75</strong> (stretch 80). Ratio used: ~<strong style="color:var(--text)">85 FTE per chief</strong>.</div>
+    <table><thead><tr><th>Scenario</th><th>Provider HC</th><th>Chiefs Needed</th><th>Current Chiefs</th><th>Gap</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td class="td-name">Finance Budget</td><td id="fc-s1p">320</td><td>~4</td><td id="fc-s1c">—</td><td style="color:var(--accent2)" id="fc-s1g">—</td><td><span class="pill good">Overstaffed</span></td></tr>
+      <tr><td class="td-name">Q3 run-rate (×4)</td><td id="fc-s2p">~396</td><td>~5</td><td id="fc-s2c">—</td><td style="color:var(--accent2)" id="fc-s2g">—</td><td><span class="pill good">Adequate</span></td></tr>
+      <tr><td class="td-name">Cumulative active roster</td><td id="fc-s3p">—</td><td id="fc-s3n">—</td><td id="fc-s3c">—</td><td id="fc-s3g">—</td><td id="fc-s3s">—</td></tr>
+    </tbody></table>
+  </div>
+</div>
+
+<!-- TA PROJECTIONS -->
+<div id="page-ta" class="page">
+  <div class="page-header"><div class="page-title">TA Projections</div><div class="page-meta">What Talent Acquisition projects they can hire each quarter vs what Finance has budgeted</div></div>
+
+  <div style="padding:14px 18px;background:rgba(191,134,245,.08);border:1px solid rgba(191,134,245,.25);border-radius:8px;font-size:13px;color:var(--text2);margin-bottom:24px">
+    <strong style="color:#bf86f5">How to read this:</strong> Finance Budget = what was planned. TA Projection = what recruiting thinks they can actually deliver. Actuals = what really happened. When TA projects more than budget, it creates downstream pressure on chief capacity.
+  </div>
+
+  <div class="metrics-row">
+    <div class="metric-card"><div class="metric-label">TA Q3 projection</div><div class="metric-val purple" style="color:#bf86f5">135</div><div class="metric-delta neutral">vs 139 budget</div></div>
+    <div class="metric-card"><div class="metric-label">Q3 actual starts</div><div class="metric-val warn" id="ta-q3-act">115</div><div class="metric-delta neutral">MD + PMHNP only</div></div>
+    <div class="metric-card"><div class="metric-label">TA Q4 projection</div><div class="metric-val purple" style="color:#bf86f5">59</div><div class="metric-delta neutral" id="ta-q4-vs">vs 78 budget</div></div>
+    <div class="metric-card"><div class="metric-label">Q4 budget vs TA gap</div><div class="metric-val good" id="ta-q4-gap">-19</div><div class="metric-delta neutral">TA is under budget</div></div>
+  </div>
+
+  <div class="card full" style="margin-bottom:24px">
+    <div class="card-title">Quarterly comparison — Budget vs TA projection vs Actuals (MD + PMHNP starts)</div>
+    <table>
+      <thead><tr>
+        <th>Quarter</th>
+        <th style="color:#5b8ef0">Finance Budget</th>
+        <th style="color:#bf86f5">TA Projection</th>
+        <th style="color:#3ecf8e">Actual Starts</th>
+        <th>Budget vs Actual</th>
+        <th>TA vs Actual</th>
+        <th>Note</th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td class="td-name">Q1 2026 (Jan–Mar)</td>
+          <td style="font-family:var(--mono);color:#5b8ef0">87</td>
+          <td style="font-family:var(--mono);color:#bf86f5">—</td>
+          <td style="font-family:var(--mono);color:#3ecf8e">84</td>
+          <td><span class="pill warn">-3 under</span></td>
+          <td style="color:var(--text3);font-size:12px">n/a</td>
+          <td style="font-size:12px;color:var(--text3)">Slightly under budget</td>
+        </tr>
+        <tr>
+          <td class="td-name">Q2 2026 (Apr–Jun)</td>
+          <td style="font-family:var(--mono);color:#5b8ef0">95</td>
+          <td style="font-family:var(--mono);color:#bf86f5">—</td>
+          <td style="font-family:var(--mono);color:#3ecf8e">100</td>
+          <td><span class="pill warn">+5 over</span></td>
+          <td style="color:var(--text3);font-size:12px">n/a</td>
+          <td style="font-size:12px;color:var(--text3)">Slightly over budget</td>
+        </tr>
+        <tr>
+          <td class="td-name">Q3 2026 (Jul–Sep)</td>
+          <td style="font-family:var(--mono);color:#5b8ef0">139</td>
+          <td style="font-family:var(--mono);color:#bf86f5">135</td>
+          <td style="font-family:var(--mono);color:#3ecf8e" id="ta-q3-cell">115</td>
+          <td><span class="pill good">-24 under</span></td>
+          <td><span class="pill warn">-20 under TA</span></td>
+          <td style="font-size:12px;color:var(--text3)">TA projected 135, actual 115</td>
+        </tr>
+        <tr>
+          <td class="td-name">Q4 2026 (Oct–Dec)</td>
+          <td style="font-family:var(--mono);color:#5b8ef0">78</td>
+          <td style="font-family:var(--mono);color:#bf86f5" id="ta-q4-cell">59</td>
+          <td style="font-family:var(--mono);color:#3ecf8e" id="ta-q4-act">13*</td>
+          <td><span class="pill good" id="ta-q4-bvsa">-19 under TA</span></td>
+          <td id="ta-q4-tvsa" style="color:var(--text3);font-size:12px">In progress</td>
+          <td style="font-size:12px;color:var(--text3)">*Oct/Nov only — Dec not yet started</td>
+        </tr>
+        <tr style="font-weight:600;color:var(--text)">
+          <td class="td-name">Full Year 2026</td>
+          <td style="font-family:var(--mono);color:#5b8ef0">399</td>
+          <td style="font-family:var(--mono);color:#bf86f5" id="ta-fy-ta">194+</td>
+          <td style="font-family:var(--mono);color:#3ecf8e" id="ta-fy-act">312*</td>
+          <td id="ta-fy-status"><span class="pill warn">-87 under budget</span></td>
+          <td id="ta-fy-tstat" style="font-size:12px;color:var(--text3)">YTD tracking</td>
+          <td style="font-size:12px;color:var(--text3)">Q4 TA projection = 59</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card full">
+    <div class="card-title">Chief capacity impact of TA projection</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:16px">If TA delivers all 59 projected Q4 starts, here's how that affects chief headroom:</div>
+    <table><thead><tr><th>Scenario</th><th>New starts</th><th>Providers added to caseloads</th><th>Avg load increase per chief</th><th>Chiefs with headroom</th></tr></thead>
+    <tbody>
+      <tr><td class="td-name">TA Q4 projection (59)</td><td style="font-family:var(--mono)">59</td><td style="font-family:var(--mono)">~50 MD/DO + ~9 PMHNP</td><td style="font-family:var(--mono)">~6/chief</td><td id="ta-chiefs-ok"><span class="pill warn">Tight — 3–4 chiefs have room</span></td></tr>
+      <tr><td class="td-name">At budget pace (78)</td><td style="font-family:var(--mono)">78</td><td style="font-family:var(--mono)">~64 MD/DO + ~14 PMHNP</td><td style="font-family:var(--mono)">~8/chief</td><td><span class="pill danger">Only 2–3 chiefs have room</span></td></tr>
+    </tbody></table>
+  </div>
+</div>
+
+<!-- CHIEFS -->
+<div id="page-chiefs" class="page">
+  <div class="page-header"><div class="page-title">Chief Caseloads</div><div class="page-meta">Forward projection based on current load + individual growth rate · Grows until hitting max capacity</div></div>
+  <div class="card full" style="margin-bottom:24px">
+    <div class="card-title">14-month forward projection — May 2026 through Jun 2027</div>
+    <div style="overflow-x:auto"><table>
+      <thead><tr><th>Chief</th><th>Type</th><th>Max</th><th>May</th><th>Jun</th><th>Jul</th><th>Aug</th><th>Sep</th><th>Oct</th><th>Nov</th><th>Dec</th><th>Jan 27</th><th>Feb 27</th><th>Mar 27</th><th>Apr 27</th><th>Cap date</th><th>Status</th></tr></thead>
+      <tbody id="chiefTBody"></tbody>
+      <tfoot><tr><td colspan="2" class="td-name">System Total</td><td id="st-max">—</td><td id="st-may">—</td><td id="st-jun">—</td><td id="st-jul">—</td><td id="st-aug">—</td><td id="st-sep">—</td><td id="st-oct">—</td><td id="st-nov">—</td><td id="st-dec">—</td><td id="st-jan">—</td><td id="st-feb">—</td><td id="st-mar">—</td><td id="st-apr">—</td><td id="st-cap">—</td><td id="st-stat">—</td></tr></tfoot>
+    </table></div>
+  </div>
+  <div class="card full"><div class="card-title">Caseload trends — all chiefs (grows to max, then holds)</div><div class="chart-wrap" style="height:280px"><canvas id="chiefTrendChart"></canvas></div></div>
+</div>
+
+<!-- ALERTS -->
+<div id="page-alerts" class="page">
+  <div class="page-header"><div class="page-title">Capacity Alerts</div><div class="page-meta">Auto-generated from chief loads and growth projections</div></div>
+  <div class="section-head" style="margin-top:0;border-top:none;padding-top:0">Critical — action required</div>
+  <div id="al-critical"></div>
+  <div class="section-head">Warning — monitor</div>
+  <div id="al-warn"></div>
+  <div class="section-head">System flags</div>
+  <div id="al-info"></div>
+</div>
+
+<!-- HIRING -->
+<div id="page-hiring" class="page">
+  <div class="page-header"><div class="page-title">Hiring Triggers</div><div class="page-meta">Shows when we need to start recruiting for a new chief, based on how fast each cohort is growing</div></div>
+
+  <div class="input-section">
+    <div class="input-section-title">⚙ Planning assumptions — drag sliders to update hiring timelines</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:20px">These three numbers drive all the hiring dates below. Adjust them to match your current recruiting reality.</div>
+    <div class="input-grid">
+      <div class="range-group">
+        <div class="input-label">🎯 Alert threshold — when to start worrying</div>
+        <div class="range-row"><input type="range" id="h-buf" min="70" max="100" value="90" oninput="onRangeChange()"><span class="range-val" id="h-buf-v">90%</span></div>
+        <div class="input-hint">At 90%, a chief with 95 max triggers a hire alert at 86 providers. Lower = earlier warning, higher = later warning.</div>
+      </div>
+      <div class="range-group">
+        <div class="input-label">📅 Weeks to recruit and hire a new chief</div>
+        <div class="range-row"><input type="range" id="h-ttfc" min="4" max="26" value="12" oninput="onRangeChange()"><span class="range-val" id="h-ttfc-v">12wk</span></div>
+        <div class="input-hint">From posting the job to the new chief's first day. Typical range: 8–16 weeks.</div>
+      </div>
+      <div class="range-group">
+        <div class="input-label">📈 Months for a new chief to reach full caseload</div>
+        <div class="range-row"><input type="range" id="h-cr" min="1" max="12" value="6" oninput="onRangeChange()"><span class="range-val" id="h-cr-v">6mo</span></div>
+        <div class="input-hint">After starting, how long until the new chief can take on a full cohort? The hiring date works backward from when we'll run out of space.</div>
+      </div>
+    </div>
+    <div style="margin-top:20px;padding:14px 16px;background:var(--surface2);border-radius:8px;font-size:13px;color:var(--text2)">
+      <strong style="color:var(--text)">How this works:</strong> For each growing chief, we calculate when their caseload will hit the alert threshold. Then we count back the weeks to recruit + months to ramp — that's the date we need to <em>start recruiting today</em> for the new chief to be ready in time.
+    </div>
+  </div>
+
+  <div class="card full" style="margin-bottom:24px">
+    <div class="card-title">What action is needed, and when</div>
+    <table><thead><tr><th>Chief cohort</th><th>What's happening</th><th>Full in</th><th>⚠ Start recruiting by</th><th>Urgency</th></tr></thead>
+    <tbody id="hiringTBody"></tbody></table>
+  </div>
+
+  <div class="section-head">New Associate Chief ramp (started Jun 2026)</div>
+  <div class="card full"><div style="font-size:13px;color:var(--text2);margin-bottom:14px">Our new Associate Chief started Jun 1 with 10 providers (5 transferred in, 5 new starts). They add ~10 providers per month and will reach their full panel of 95 by approximately April 2027.</div><div class="chart-wrap" style="height:200px"><canvas id="rampChart"></canvas></div></div>
+</div>
+
+<!-- COHORT ASSIGNMENT -->
+<div id="page-assign" class="page">
+  <div class="page-header"><div class="page-title">Cohort Assignment</div><div class="page-meta">Upload or enter incoming cohorts · Get ranked chief recommendations · Confirm and apply</div></div>
+  <div class="step-row">
+    <div class="step active" id="si1">1 · Enter Cohort</div>
+    <div class="step" id="si2">2 · Recommendations</div>
+    <div class="step" id="si3">3 · Confirm</div>
+  </div>
+  <div id="as1">
+    <div class="input-section">
+      <div class="input-section-title">Upload cohort CSV or enter manually</div>
+      <div class="upload-zone" onclick="document.getElementById('cohortFI').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="handleCohortDrop(event)">
+        <div style="font-size:22px">📋</div>
+        <p>Drop a cohort CSV here or click to browse</p>
+        <div class="upload-hint">Columns: Cohort (date), Provider Type, Number of Providers</div>
+        <input type="file" id="cohortFI" accept=".csv" multiple style="display:none" onchange="handleCohortFile(event)">
+      </div>
+    </div>
+    <div class="input-section">
+      <div class="input-section-title">Or enter manually</div>
+      <div class="cr-row" style="font-size:10px;font-family:var(--mono);color:var(--text3);margin-bottom:2px"><span>Cohort Date</span><span>MD/DO</span><span>PMHNP</span><span>Therapy</span><span>Notes</span><span></span></div>
+      <div id="cr-rows"></div>
+      <button class="btn ghost" onclick="addCohortRow()" style="margin-top:10px;font-size:12px;padding:6px 14px">+ Add row</button>
+      <div class="btn-row"><button class="btn" onclick="runRecs()">Generate Recommendations →</button></div>
+    </div>
+  </div>
+  <div id="as2" style="display:none">
+    <div class="card full" style="margin-bottom:16px"><div class="card-title">Cohort summary</div><div id="cohort-sum"></div></div>
+    <div class="card full"><div class="card-title">Recommendations — ranked by available capacity + type match</div><div style="font-size:12px;color:var(--text2);margin-bottom:16px">MD/DO starts go to Psychiatrist chiefs. PMHNP starts go to PMHNP chiefs. Top pick = most headroom, not at stretch cap.</div><div id="recs-md" style="margin-bottom:20px"></div><div id="recs-np"></div></div>
+    <div class="btn-row" style="margin-top:20px"><button class="btn ghost" onclick="goStep(1)">← Back</button><button class="btn" onclick="goStep(3)">Confirm →</button></div>
+  </div>
+  <div id="as3" style="display:none">
+    <div class="card full" style="margin-bottom:16px"><div class="card-title">Confirm assignments</div><div id="confirm-tbl"></div></div>
+    <div class="alert info" style="margin-bottom:16px"><div class="alert-icon">ℹ</div><div class="alert-body"><strong>Applying will update chief caseloads</strong><span class="sub">All projections, alerts, and hiring triggers will recalculate.</span></div></div>
+    <div class="btn-row"><button class="btn ghost" onclick="goStep(2)">← Back</button><button class="btn" onclick="applyAssign()">Apply Assignments</button></div>
+  </div>
+</div>
+
+<!-- MANAGE CHIEFS -->
+<div id="page-manage" class="page">
+  <div class="page-header"><div class="page-title">Manage Chiefs</div><div class="page-meta">Add or edit chief profiles · All changes propagate to all views</div></div>
+  <div class="card full" style="margin-bottom:16px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div class="card-title" style="margin-bottom:0">Chief profiles</div>
+      <button class="btn" onclick="openModal()">+ Add chief</button>
+    </div>
+    <table><thead><tr><th>Name</th><th>Type</th><th>Role</th><th>Max</th><th>Stretch</th><th>Current load</th><th>Growth/mo</th><th>Start date</th><th>Actions</th></tr></thead>
+    <tbody id="manageTBody"></tbody></table>
+  </div>
+  <div class="alert info"><div class="alert-icon">ℹ</div><div class="alert-body"><strong>Capacity rules</strong><span class="sub">Psychiatrist chiefs: 95 standard / 100 stretch. PMHNP chiefs: 75 standard / 80 stretch. These defaults auto-fill when you select a type in the Add Chief form.</span></div></div>
+</div>
+
+<!-- MANUAL INPUTS -->
+<div id="page-inputs" class="page">
+  <div class="page-header"><div class="page-title">Annual Data</div><div class="page-meta">Enter data by year · Archive completed years · Add future years as you plan ahead</div></div>
+
+  <!-- Year selector + actions -->
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;flex-wrap:wrap">
+    <div style="font-size:13px;color:var(--text2)">Active year:</div>
+    <div id="year-tabs" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+    <button class="btn ghost" onclick="addYear()" style="font-size:12px;padding:6px 14px">+ Add year</button>
+  </div>
+
+  <!-- Active year data entry -->
+  <div id="year-data-panel"></div>
+
+  <!-- Archive -->
+  <div class="section-head">Archived years</div>
+  <div id="archive-panel">
+    <div style="font-size:13px;color:var(--text3)">No archived years yet. Archive a completed year using the button above to keep its data for reference.</div>
+  </div>
+</div>
+
+</main>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-title" id="modal-ttl">Add New Chief</div>
+    <div class="input-grid" style="margin-bottom:16px">
+      <div class="input-group" style="grid-column:1/-1"><div class="input-label">Full name</div><input type="text" id="mc-name" placeholder="e.g. Jane Smith"></div>
+      <div class="input-group"><div class="input-label">Specialty</div>
+        <select id="mc-type" onchange="typeDefaults()">
+          <option value="Psychiatrist">Psychiatrist (MD/DO)</option>
+          <option value="PMHNP">PMHNP</option>
+        </select>
+      </div>
+      <div class="input-group"><div class="input-label">Role</div>
+        <select id="mc-role"><option value="Chief">Chief</option><option value="Associate">Associate Chief</option></select>
+      </div>
+      <div class="input-group"><div class="input-label">Max cohort</div><input type="number" id="mc-max" value="95"></div>
+      <div class="input-group"><div class="input-label">Stretch max</div><input type="number" id="mc-stretch" value="100"></div>
+      <div class="input-group"><div class="input-label">Current load</div><input type="number" id="mc-load" value="0"></div>
+      <div class="input-group"><div class="input-label">Growth/month</div><input type="number" id="mc-growth" value="0"></div>
+      <div class="input-group"><div class="input-label">Start date</div><input type="text" id="mc-start" placeholder="e.g. Jun 2026"></div>
+      <div class="input-group"><div class="input-label">Notes</div><input type="text" id="mc-notes" placeholder="Optional"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn" onclick="saveChief()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ========== DATA ==========
+const MONTHS = ['May','Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan 27','Feb 27','Mar 27','Apr 27','May 27','Jun 27'];
+// Month index 0 = May 2026 (current). load is set as of Jun 2026 (index 1).
+const PALETTE = ['#5b8ef0','#3ecf8e','#f5a623','#e8504a','#4ed4e0','#f07b76','#7aa5f3','#f5c84a','#60c6f5','#a5e882'];
+
+let chiefs = [
+  {id:1,name:'Cesar De Paz',       type:'Psychiatrist',role:'Chief',    max:95,stretch:100,load:92,growth:0, start:'Pre-2026',notes:''},
+  {id:2,name:'Edmund Clark',       type:'Psychiatrist',role:'Chief',    max:95,stretch:100,load:93,growth:0, start:'Pre-2026',notes:''},
+  {id:3,name:'Kira Posteraro',     type:'Psychiatrist',role:'Chief',    max:95,stretch:100,load:97,growth:0, start:'Pre-2026',notes:''},
+  {id:4,name:'Laura Mayol',        type:'Psychiatrist',role:'Chief',    max:95,stretch:100,load:88,growth:1, start:'Pre-2026',notes:''},
+  {id:5,name:'Nicholas Tamoria',   type:'Psychiatrist',role:'Chief',    max:95,stretch:100,load:90,growth:0, start:'Pre-2026',notes:''},
+  {id:6,name:'Satveet Khela',      type:'Psychiatrist',role:'Chief',    max:95,stretch:100,load:58,growth:10,start:'Pre-2026',notes:''},
+  {id:7,name:'Sherra StClair',     type:'PMHNP',       role:'Chief',    max:75,stretch:80, load:43,growth:9, start:'Pre-2026',notes:''},
+  {id:8,name:'Rebecca Kostopoulos',type:'PMHNP',       role:'Chief',    max:75,stretch:80, load:81,growth:0, start:'Pre-2026',notes:''},
+  {id:9,name:'Sophia Monsour',     type:'Psychiatrist',role:'Chief',    max:95,stretch:100,load:94,growth:0, start:'Pre-2026',notes:''},
+  {id:10,name:'New Assoc. Chief',  type:'Psychiatrist',role:'Associate',max:95,stretch:100,load:10,growth:10,start:'Jun 2026', notes:'5 transferred + 5 new · ramping +10/mo'},
+];
+let nextId = 11;
+
+// Project 14 months forward (May 2026 = index 0, Jun 27 = index 13).
+// load is the Jun 2026 figure. May is back-calculated. Jul onward grows until hitting stretch.
+// New Assoc. Chief: May = 0 (not started), Jun = 10, then +10/mo.
+function proj(c) {
+  const n = MONTHS.length; // 14
+  const arr = new Array(n);
+  arr[1] = c.load; // Jun
+  // May: one step back
+  arr[0] = c.start === 'Jun 2026' ? 0 : Math.max(0, c.load - c.growth);
+  // Jul onward
+  for(let i = 2; i < n; i++) arr[i] = Math.min(c.stretch, arr[i-1] + c.growth);
+  return arr;
+}
+
+// Returns index (month offset from May=0) when chief hits their max. -1 if already over.
+function monthHitsCap(c) {
+  if(c.load > c.max) return -1;
+  if(c.growth <= 0) return null; // never fills
+  const spots = c.max - c.load;
+  const moFromJun = Math.ceil(spots / c.growth); // months after Jun (index 1)
+  return 1 + moFromJun; // offset from May
+}
+
+function sysMax() { return chiefs.reduce((s,c)=>s+c.max,0); }
+function sysTotals() {
+  const rows = chiefs.map(c=>proj(c));
+  return MONTHS.map((_,i)=>rows.reduce((s,r)=>s+r[i],0));
+}
+
+// Returns the month label for a given index offset from May 2026
+function moLabel(idx) { return MONTHS[Math.min(Math.max(idx,0), MONTHS.length-1)]; }
+// Finance budget from ramp model (MD/NP HC starts per quarter, 2026)
+// Actuals from provider starts CSV (MD + PMHNP only, no therapy)
+// TA = Talent Acquisition projections
+let fstate={
+  bQ1:87, bQ2:95, bQ3:139, bQ4:78,       // Finance budget by quarter
+  aQ1:84, aQ2:100, aQ3:115, aQ4:13,       // Actuals (partial Q4 = Oct/Nov only)
+  taQ3:135, taQ4:59                         // TA projections
+};
+let hstate={buf:90, weeksHire:12, monthsRamp:6};
+const charts={};
+
+// ========== NAV ==========
+function showPage(id,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  if(el) el.classList.add('active');
+  const fn={dashboard:refreshDashboard,forecast:refreshForecast,ta:refreshTA,chiefs:buildChiefTable,alerts:buildAlerts,hiring:buildHiring,manage:buildManage};
+  if(fn[id]) fn[id]();
+}
+
+// ========== RANGE SLIDERS ==========
+function onRangeChange(){
+  hstate.buf        = +document.getElementById('h-buf').value;
+  hstate.weeksHire  = +document.getElementById('h-ttfc').value;
+  hstate.monthsRamp = +document.getElementById('h-cr').value;
+  document.getElementById('h-buf-v').textContent  = hstate.buf+'%';
+  document.getElementById('h-ttfc-v').textContent = hstate.weeksHire+'wk';
+  document.getElementById('h-cr-v').textContent   = hstate.monthsRamp+'mo';
+  buildHiring();
+}
+
+// ========== HIRING ==========
+
+function buildHiring(){
+  const body=document.getElementById('hiringTBody');if(!body)return;
+  const totalLeadMonths=Math.round(hstate.weeksHire/4.33)+hstate.monthsRamp;
+  const rows=[];
+
+  chiefs.filter(c=>c.load>c.max).forEach(c=>{
+    rows.push({chief:c.name,what:`Over capacity right now — ${c.load} providers, max is ${c.max}`,fullIn:'Already over',recruitBy:'<strong style="color:var(--danger)">Reassign providers immediately</strong>',pri:'danger'});
+  });
+
+  chiefs.filter(c=>c.growth>0).forEach(c=>{
+    const capIdx = monthHitsCap(c); // index from May=0. -1=already over, null=never
+    if(capIdx === -1 || capIdx === null) return;
+    const spots = c.max - c.load;
+    const recruitIdx = Math.max(0, capIdx - totalLeadMonths);
+    const capLabel = moLabel(capIdx);
+    const recruitLabel_raw = moLabel(recruitIdx);
+    let recruitLabel, pri;
+    if(recruitIdx <= 0){recruitLabel=`<strong style="color:var(--danger)">Now — already behind</strong>`;pri='danger';}
+    else if(recruitIdx <= 2){recruitLabel=`<strong style="color:var(--warn)">${recruitLabel_raw}</strong>`;pri='warn';}
+    else{recruitLabel=recruitLabel_raw;pri='info';}
+    rows.push({
+      chief:c.name+(c.role==='Associate'?' (AC)':''),
+      what:`+${c.growth}/mo · ${c.load}/${c.max} now · ${spots} spots left`,
+      fullIn:capLabel, recruitBy:recruitLabel, pri
+    });
+  });
+
+  if(!rows.length){body.innerHTML=`<tr><td colspan="5" style="color:var(--text3);text-align:center;padding:20px">No growing cohorts. Add growth rates in Manage Chiefs.</td></tr>`;return;}
+
+  body.innerHTML=rows.map(r=>`<tr>
+    <td class="td-name" style="font-size:13px">${r.chief}</td>
+    <td style="font-size:12px;color:var(--text2)">${r.what}</td>
+    <td style="font-family:var(--mono);font-size:12px">${r.fullIn}</td>
+    <td style="font-size:13px">${r.recruitBy}</td>
+    <td><span class="pill ${r.pri}">${r.pri==='danger'?'🔴 Urgent':r.pri==='warn'?'🟡 Soon':'🟢 Plan ahead'}</span></td>
+  </tr>`).join('');
+}
+
+// ========== ALERTS ==========
+function buildAlerts(){
+  const crit=[],warn=[],info=[];
+  chiefs.forEach(c=>{
+    const spots=c.max-c.load;
+    const moToFull=c.growth>0&&spots>0?Math.ceil(spots/c.growth):null;
+    if(c.load>c.max){
+      crit.push({title:`${c.name} — Over capacity`,sub:`Currently managing ${c.load} providers but their maximum is ${c.max}. Needs ${c.load-c.max} providers reassigned to another chief.`,meta:`Type: ${c.type} · Role: ${c.role}`});
+    } else if(spots<=2){
+      warn.push({title:`${c.name} — ${spots===0?'No spots left':'Only '+spots+' spot'+(spots===1?'':'s')+' left'}`,sub:`Currently at ${c.load} out of ${c.max} maximum. Cannot accept new starts until space opens up.`,meta:`Type: ${c.type} · Role: ${c.role}`});
+    } else if(moToFull!==null&&moToFull<=4){
+      warn.push({title:`${c.name} — Will reach maximum capacity in ~${moToFull} month${moToFull===1?'':'s'}`,sub:`Currently at ${c.load}/${c.max} and adding ${c.growth} providers per month. Only ${spots} spots remaining. Recruiting for additional capacity should begin now.`,meta:`Type: ${c.type} · Role: ${c.role}`});
+    }
+  });
+  const tots=sysTotals(),sm=sysMax();
+  info.push({title:`Overall system: ${tots[1]} of ${sm} total spots filled in June (${Math.round(tots[1]/sm*100)}% capacity)`,sub:`On current growth trajectory, the system reaches ${tots[5]} of ${sm} total spots by October (${Math.round(tots[5]/sm*100)}%). ${sm-tots[5]} spots remain at that point.`,meta:`${chiefs.length} active chiefs · ${chiefs.filter(c=>c.role==='Associate').length} associate chief(s)`});
+  info.push({title:`Q4 hiring gap: TA projects 59 starts, Finance budget is 78`,sub:`TA is projecting 19 fewer hires than finance budgeted for Q4. If TA's number is right, chief capacity pressure may ease slightly in Q4.`,meta:''});
+  const render=(arr,cls,icon)=>arr.length?arr.map(a=>`<div class="alert ${cls}"><div class="alert-icon">${icon}</div><div class="alert-body"><strong>${a.title}</strong><span class="sub">${a.sub}</span>${a.meta?`<span class="meta">${a.meta}</span>`:''}</div></div>`).join(''):'<div style="color:var(--text3);font-size:13px;padding:8px 0">None currently.</div>';
+  document.getElementById('al-critical').innerHTML=render(crit,'danger','⚠');
+  document.getElementById('al-warn').innerHTML=render(warn,'warn','▲');
+  document.getElementById('al-info').innerHTML=render(info,'info','ℹ');
+}
+
+// ========== CHIEF TABLE ==========
+function buildChiefTable(){
+  const body = document.getElementById('chiefTBody');
+  if(!body) return;
+  const n = MONTHS.length; // 14
+  const totals = new Array(n).fill(0);
+  let tmax=0;
+
+  body.innerHTML = chiefs.map((c,ci)=>{
+    const m = proj(c);
+    m.forEach((v,i)=>totals[i]+=v);
+    tmax+=c.max;
+    const spots=c.max-c.load;
+    const moToFull=c.growth>0&&spots>0?Math.ceil(spots/c.growth):null;
+
+    // Find first month index where load >= max
+    let capIdx = m.findIndex(v=>v>=c.max);
+    let capDate = capIdx >= 0 ? MONTHS[capIdx] : (c.load > c.max ? 'Already over' : '—');
+
+    const pill = c.load>c.max ? `<span class="pill danger">Over cap</span>` :
+      c.role==='Associate' ? `<span class="pill purple">Ramping</span>` :
+      spots<=2 ? `<span class="pill warn">Full</span>` :
+      moToFull!==null&&moToFull<=4 ? `<span class="pill warn">Caps ${moLabel(1+moToFull)}</span>` :
+      moToFull!==null ? `<span class="pill info">Caps ${moLabel(1+moToFull)}</span>` :
+      `<span class="pill good">Stable</span>`;
+
+    const typeTag = c.type==='Psychiatrist'?`<span class="tag psych">Psych</span>`:`<span class="tag pmhnp">PMHNP</span>`;
+    const cells = m.map((v,i)=>{
+      const p=v/c.max;
+      const col=v>c.max?'#f07b76':p>=1?'#f07b76':p>0.97?'#f5b84a':c.role==='Associate'?'#bf86f5':p>0.85?'#8b8fa8':'#4ed49b';
+      const display = v===0&&c.role==='Associate'&&i===0?'—':v;
+      return `<td style="color:${col};font-family:var(--mono);font-size:12px">${display}</td>`;
+    }).join('');
+
+    return `<tr>
+      <td class="td-name" style="font-size:12px">${c.name}${c.role==='Associate'?` <span class="tag assoc">AC</span>`:''}${c.notes?`<div style="font-size:10px;color:var(--text3);margin-top:1px">${c.notes}</div>`:''}
+      </td><td>${typeTag}</td><td style="font-family:var(--mono);font-size:12px">${c.max}</td>${cells}
+      <td style="font-family:var(--mono);font-size:11px;color:var(--text3)">${capDate}</td><td>${pill}</td></tr>`;
+  }).join('');
+
+  // Footer totals
+  const footerIds=['st-may','st-jun','st-jul','st-aug','st-sep','st-oct','st-nov','st-dec','st-jan','st-feb','st-mar','st-apr'];
+  footerIds.forEach((id,i)=>{const el=document.getElementById(id);if(el){const p=totals[i]/tmax;el.textContent=totals[i];el.style.color=p>1?'#f07b76':p>.9?'#f5b84a':'#4ed49b';}});
+  const maxEl=document.getElementById('st-max');if(maxEl)maxEl.textContent=tmax;
+  const lastTotal=totals[n-1];
+  const capEl=document.getElementById('st-cap');if(capEl)capEl.textContent=lastTotal>=tmax?'Before Jun 27':'>Jun 27';
+  const stEl=document.getElementById('st-stat');if(stEl){const p=totals[1]/tmax;stEl.innerHTML=p>.95?'<span class="pill danger">Near cap</span>':p>.85?'<span class="pill warn">Tightening</span>':'<span class="pill good">OK</span>';}
+
+  rebuildTrendChart();
+}
+
+// ========== MANAGE ==========
+function buildManage(){
+  const body=document.getElementById('manageTBody');
+  if(!body)return;
+  body.innerHTML=chiefs.map((c,i)=>`<tr>
+    <td class="td-name">${c.name}</td>
+    <td>${c.type==='Psychiatrist'?'<span class="tag psych">Psych</span>':'<span class="tag pmhnp">PMHNP</span>'}</td>
+    <td>${c.role==='Associate'?'<span class="tag assoc">Assoc.</span>':c.role}</td>
+    <td><input class="ie" type="number" value="${c.max}" onchange="chiefs[${i}].max=+this.value;propagate()"></td>
+    <td><input class="ie" type="number" value="${c.stretch}" onchange="chiefs[${i}].stretch=+this.value;propagate()"></td>
+    <td><input class="ie" type="number" value="${c.load}" onchange="chiefs[${i}].load=+this.value;propagate()"></td>
+    <td><input class="ie" type="number" value="${c.growth}" onchange="chiefs[${i}].growth=+this.value;propagate()"></td>
+    <td style="font-size:12px;color:var(--text3)">${c.start}</td>
+    <td style="white-space:nowrap"><button class="btn ghost" style="padding:4px 10px;font-size:11px" onclick="editChief(${i})">Edit</button> <button class="btn dbtn" style="padding:4px 10px;font-size:11px" onclick="removeChief(${i})">Remove</button></td>
+  </tr>`).join('');
+}
+function propagate(){ buildManage(); } // lightweight — real pages re-render on nav
+
+let editIdx=null;
+function openModal(){editIdx=null;document.getElementById('modal-ttl').textContent='Add New Chief';['mc-name','mc-notes','mc-start'].forEach(id=>document.getElementById(id).value='');document.getElementById('mc-type').value='Psychiatrist';document.getElementById('mc-role').value='Chief';document.getElementById('mc-max').value=95;document.getElementById('mc-stretch').value=100;document.getElementById('mc-load').value=0;document.getElementById('mc-growth').value=0;document.getElementById('modal').classList.add('open');}
+function editChief(i){editIdx=i;const c=chiefs[i];document.getElementById('modal-ttl').textContent='Edit — '+c.name;document.getElementById('mc-name').value=c.name;document.getElementById('mc-type').value=c.type;document.getElementById('mc-role').value=c.role;document.getElementById('mc-max').value=c.max;document.getElementById('mc-stretch').value=c.stretch;document.getElementById('mc-load').value=c.load;document.getElementById('mc-growth').value=c.growth;document.getElementById('mc-start').value=c.start;document.getElementById('mc-notes').value=c.notes;document.getElementById('modal').classList.add('open');}
+function closeModal(){document.getElementById('modal').classList.remove('open');}
+function typeDefaults(){const t=document.getElementById('mc-type').value;document.getElementById('mc-max').value=t==='PMHNP'?75:95;document.getElementById('mc-stretch').value=t==='PMHNP'?80:100;}
+function saveChief(){
+  const name=document.getElementById('mc-name').value.trim();
+  if(!name){alert('Please enter a name.');return;}
+  const chief={id:editIdx!==null?chiefs[editIdx].id:nextId++,name,type:document.getElementById('mc-type').value,role:document.getElementById('mc-role').value,max:+document.getElementById('mc-max').value||95,stretch:+document.getElementById('mc-stretch').value||100,load:+document.getElementById('mc-load').value||0,growth:+document.getElementById('mc-growth').value||0,start:document.getElementById('mc-start').value,notes:document.getElementById('mc-notes').value};
+  if(editIdx!==null)chiefs[editIdx]=chief;else chiefs.push(chief);
+  closeModal();buildManage();
+}
+function removeChief(i){if(!confirm('Remove '+chiefs[i].name+'?'))return;chiefs.splice(i,1);buildManage();}
+
+// ========== COHORT ASSIGNMENT ==========
+let pCohort={rows:[],md:0,np:0,therapy:0};
+let crCount=0;
+
+function addCohortRow(){
+  crCount++;
+  const div=document.createElement('div');
+  div.className='cr-row';
+  div.innerHTML=`<input type="text" placeholder="e.g. 7/13/26" style="font-size:12px;padding:6px 8px"><input type="number" value="0" min="0" style="font-size:12px;padding:6px 8px"><input type="number" value="0" min="0" style="font-size:12px;padding:6px 8px"><input type="number" value="0" min="0" style="font-size:12px;padding:6px 8px"><input type="text" placeholder="Notes" style="font-size:12px;padding:6px 8px"><button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;line-height:1">×</button>`;
+  document.getElementById('cr-rows').appendChild(div);
+}
+
+function handleCohortFile(evt){parseCohortCSV(evt.target.files);}
+function handleCohortDrop(evt){evt.preventDefault();parseCohortCSV(evt.dataTransfer.files);}
+function parseCohortCSV(files){
+  const all=[];let done=0;
+  Array.from(files).forEach(file=>{
+    const r=new FileReader();
+    r.onload=e=>{
+      const lines=e.target.result.trim().split('\n');
+      const hdrs=lines[0].split(',').map(h=>h.trim().replace(/"/g,'').toLowerCase());
+      lines.slice(1).forEach(line=>{
+        const cols=line.split(',').map(c=>c.trim().replace(/"/g,''));
+        const row={};hdrs.forEach((h,i)=>row[h]=cols[i]||'');
+        all.push(row);
+      });
+      if(++done===files.length) processParsed(all);
+    };r.readAsText(file);
+  });
+}
+function processParsed(rows){
+  const map={};
+  rows.forEach(r=>{
+    const dk=Object.keys(r).find(k=>k.includes('cohort')||k.includes('date'))||Object.keys(r)[0];
+    const tk=Object.keys(r).find(k=>k.includes('type'))||Object.keys(r)[1];
+    const nk=Object.keys(r).find(k=>k.includes('number')||k.includes('count'))||Object.keys(r)[2];
+    const date=(r[dk]||'').trim();const type=(r[tk]||'').toLowerCase();const cnt=parseInt(r[nk])||0;
+    if(!date||date.toLowerCase().includes('overall'))return;
+    if(!map[date])map[date]={date,md:0,np:0,therapy:0};
+    if(type.includes('md')||type.includes('do')||(type.includes('psych')&&!type.includes('pmhnp')))map[date].md+=cnt;
+    else if(type.includes('pmhnp')||type.includes('np'))map[date].np+=cnt;
+    else if(type.includes('therapy'))map[date].therapy+=cnt;
+  });
+  pCohort.rows=Object.values(map);
+  pCohort.md=pCohort.rows.reduce((s,r)=>s+r.md,0);
+  pCohort.np=pCohort.rows.reduce((s,r)=>s+r.np,0);
+  pCohort.therapy=pCohort.rows.reduce((s,r)=>s+r.therapy,0);
+  runRecs();
+}
+
+function runRecs(){
+  // Collect manual rows if no file data
+  if(!pCohort.rows||pCohort.rows.length===0){
+    const rows=[...document.querySelectorAll('#cr-rows .cr-row')];
+    const cohortRows=rows.map(row=>{
+      const inputs=row.querySelectorAll('input');
+      return{date:inputs[0]?.value||'',md:+inputs[1]?.value||0,np:+inputs[2]?.value||0,therapy:+inputs[3]?.value||0};
+    }).filter(r=>r.date);
+    if(!cohortRows.length){alert('Enter at least one cohort row with a date.');return;}
+    pCohort.rows=cohortRows;pCohort.md=cohortRows.reduce((s,r)=>s+r.md,0);pCohort.np=cohortRows.reduce((s,r)=>s+r.np,0);pCohort.therapy=cohortRows.reduce((s,r)=>s+r.therapy,0);
+  }
+
+  document.getElementById('cohort-sum').innerHTML=`
+    <div class="metrics-row" style="grid-template-columns:repeat(4,1fr)">
+      <div class="metric-card" style="padding:12px 14px"><div class="metric-label">Cohort dates</div><div class="metric-val" style="font-size:20px">${pCohort.rows.length}</div></div>
+      <div class="metric-card" style="padding:12px 14px"><div class="metric-label">MD/DO</div><div class="metric-val" style="font-size:20px">${pCohort.md}</div></div>
+      <div class="metric-card" style="padding:12px 14px"><div class="metric-label">PMHNP</div><div class="metric-val" style="font-size:20px">${pCohort.np}</div></div>
+      <div class="metric-card" style="padding:12px 14px"><div class="metric-label">Therapy</div><div class="metric-val" style="font-size:20px">${pCohort.therapy}</div></div>
+    </div>
+    <table style="margin-top:12px"><thead><tr><th>Date</th><th>MD/DO</th><th>PMHNP</th><th>Therapy</th><th>Total</th></tr></thead>
+    <tbody>${pCohort.rows.map(r=>`<tr><td class="td-name">${r.date}</td><td style="font-family:var(--mono)">${r.md}</td><td style="font-family:var(--mono)">${r.np}</td><td style="font-family:var(--mono)">${r.therapy}</td><td style="font-family:var(--mono);font-weight:600">${r.md+r.np+r.therapy}</td></tr>`).join('')}</tbody></table>`;
+
+  const rankFor=(type,incoming)=>{
+    if(incoming===0)return`<div style="color:var(--text3);font-size:12px;padding:8px 0">No ${type} starts in this cohort.</div>`;
+    const list=chiefs.filter(c=>c.type===type).map(c=>({c,spots:c.max-c.load,pct:c.load/c.max})).sort((a,b)=>b.spots-a.spots);
+    return`<div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:10px">${type==='Psychiatrist'?'MD/DO':'PMHNP'} starts (${incoming}) — Chief recommendations</div>`+
+    list.slice(0,4).map((item,i)=>`<div class="rec-card ${i===0?'top':''}">
+      <div class="rec-rank">${i===0?'★ TOP PICK':'#'+(i+1)} · ${item.c.type} · ${item.c.role}</div>
+      <div class="rec-name">${item.c.name}</div>
+      <div class="rec-detail">Current: ${item.c.load}/${item.c.max} · Spots available: ${item.spots} · After assignment: ${item.c.load+incoming}${item.c.load+incoming>item.c.max?' <span style="color:var(--danger)">⚠ over max</span>':''}</div>
+      <div class="rec-bar"><div class="rec-bar-fill" style="width:${Math.min(100,item.pct*100)}%;background:${item.pct>1?'var(--danger)':item.pct>.9?'var(--warn)':'var(--accent2)'}"></div></div>
+    </div>`).join('');
+  };
+  document.getElementById('recs-md').innerHTML=rankFor('Psychiatrist',pCohort.md);
+  document.getElementById('recs-np').innerHTML=rankFor('PMHNP',pCohort.np);
+  goStep(2);
+}
+
+function goStep(n){
+  [1,2,3].forEach(i=>{
+    document.getElementById('as'+i).style.display=i===n?'block':'none';
+    document.getElementById('si'+i).className='step '+(i<n?'done':i===n?'active':'');
+  });
+  if(n===3)buildConfirm();
+}
+
+function buildConfirm(){
+  const pc=chiefs.filter(c=>c.type==='Psychiatrist').sort((a,b)=>(b.max-b.load)-(a.max-a.load));
+  const pn=chiefs.filter(c=>c.type==='PMHNP').sort((a,b)=>(b.max-b.load)-(a.max-a.load));
+  document.getElementById('confirm-tbl').innerHTML=`<table><thead><tr><th>Cohort Date</th><th>MD/DO</th><th>Assigned Chief</th><th>PMHNP</th><th>Assigned Chief</th></tr></thead><tbody>
+    ${pCohort.rows.map(r=>`<tr><td class="td-name">${r.date}</td><td style="font-family:var(--mono)">${r.md}</td><td style="font-size:12px">${r.md>0?(pc[0]?.name||'—'):'—'}</td><td style="font-family:var(--mono)">${r.np}</td><td style="font-size:12px">${r.np>0?(pn[0]?.name||'—'):'—'}</td></tr>`).join('')}
+  </tbody></table>`;
+}
+
+function applyAssign(){
+  const pc=chiefs.filter(c=>c.type==='Psychiatrist').sort((a,b)=>(b.max-b.load)-(a.max-a.load));
+  const pn=chiefs.filter(c=>c.type==='PMHNP').sort((a,b)=>(b.max-b.load)-(a.max-a.load));
+  if(pCohort.md>0&&pc[0]){const idx=chiefs.findIndex(c=>c.id===pc[0].id);if(idx>=0)chiefs[idx].load+=pCohort.md;}
+  if(pCohort.np>0&&pn[0]){const idx=chiefs.findIndex(c=>c.id===pn[0].id);if(idx>=0)chiefs[idx].load+=pCohort.np;}
+  pCohort={rows:[],md:0,np:0,therapy:0};
+  document.getElementById('cr-rows').innerHTML='';crCount=0;
+  goStep(1);alert('Assignments applied. Chief caseloads updated across all views.');
+}
+
+// ========== CHARTS ==========
+function buildMonthlyChart(){
+  const ctx=document.getElementById('monthlyChart');if(!ctx)return;
+  if(charts.monthly)charts.monthly.destroy();
+  const d=[{m:'Jan',md:33,np:7,th:16},{m:'Feb',md:10,np:8,th:21},{m:'Mar',md:20,np:6,th:20},{m:'Apr',md:27,np:6,th:38},{m:'May',md:15,np:9,th:25},{m:'Jun',md:16,np:27,th:28},{m:'Jul',md:38,np:12,th:2},{m:'Aug',md:30,np:9,th:1},{m:'Sep',md:25,np:1,th:0},{m:'Oct',md:7,np:2,th:0},{m:'Nov',md:4,np:0,th:0}];
+  charts.monthly=new Chart(ctx,{type:'bar',data:{labels:d.map(x=>x.m),datasets:[{label:'MD/DO',data:d.map(x=>x.md),backgroundColor:'#5b8ef0',borderRadius:3},{label:'PMHNP',data:d.map(x=>x.np),backgroundColor:'#bf86f5',borderRadius:3},{label:'Therapy',data:d.map(x=>x.th),backgroundColor:'#3ecf8e',borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8b8fa8',boxWidth:10,font:{size:11}}}},scales:{x:{stacked:true,ticks:{color:'#555870',font:{size:11}},grid:{color:'#2a2d38'}},y:{stacked:true,ticks:{color:'#555870',font:{size:11}},grid:{color:'#2a2d38'}}}}});
+}
+
+function buildChiefBarChart(){
+  const ctx=document.getElementById('chiefBarChart');if(!ctx)return;
+  if(charts.chiefBar)charts.chiefBar.destroy();
+  charts.chiefBar=new Chart(ctx,{type:'bar',data:{labels:chiefs.map(c=>c.name.split(' ')[0]+(c.role==='Associate'?' AC':'')),datasets:[{label:'Jun load',data:chiefs.map(c=>c.load),backgroundColor:chiefs.map(c=>c.role==='Associate'?'#bf86f5':c.load>c.max?'#e8504a':c.load/c.max>.95?'#f5a623':'#5b8ef0'),borderRadius:3},{label:'Max',data:chiefs.map(c=>c.max),backgroundColor:'rgba(255,255,255,.06)',borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8b8fa8',font:{size:11},boxWidth:10}}},scales:{x:{ticks:{color:'#555870',font:{size:9}},grid:{color:'#2a2d38'}},y:{ticks:{color:'#555870'},grid:{color:'#2a2d38'},max:110}}}});
+}
+
+function buildForecastChart(){
+  const ctx=document.getElementById('forecastChart');if(!ctx)return;
+  if(charts.forecast)charts.forecast.destroy();
+  const f=fstate;
+  charts.forecast=new Chart(ctx,{type:'bar',data:{labels:['Q1 2026','Q2 2026','Q3 2026','Q4 2026'],datasets:[
+    {label:'Finance Budget',data:[f.bQ1,f.bQ2,f.bQ3,f.bQ4],backgroundColor:'rgba(91,142,240,.5)',borderRadius:3},
+    {label:'Actual Starts',data:[f.aQ1,f.aQ2,f.aQ3,null],backgroundColor:'rgba(62,207,142,.7)',borderRadius:3},
+    {label:'TA Projection',data:[null,null,f.taQ3,f.taQ4],backgroundColor:'rgba(191,134,245,.5)',borderRadius:3},
+    {label:'Q4 Partial Actual',data:[null,null,null,f.aQ4],backgroundColor:'rgba(62,207,142,.35)',borderRadius:3},
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8b8fa8',font:{size:11},boxWidth:10}}},scales:{x:{ticks:{color:'#555870'},grid:{color:'#2a2d38'}},y:{ticks:{color:'#555870'},grid:{color:'#2a2d38'}}}}});
+}
+
+function rebuildTrendChart(){
+  const ctx=document.getElementById('chiefTrendChart');if(!ctx)return;
+  if(charts.trend)charts.trend.destroy();
+  const datasets=chiefs.map((c,i)=>({
+    label:c.name.split(' ')[0]+(c.role==='Associate'?' (AC)':''),
+    data:proj(c),
+    borderColor:c.role==='Associate'?'#bf86f5':PALETTE[i%PALETTE.length],
+    backgroundColor:'transparent',
+    borderWidth:c.role==='Associate'?2:1.5,
+    borderDash:c.role==='Associate'?[5,3]:[],
+    tension:.35,pointRadius:2
+  }));
+  datasets.push({label:'Max (95 Psych / 75 PMHNP)',data:Array(MONTHS.length).fill(95),borderColor:'rgba(232,80,74,.3)',borderDash:[4,4],backgroundColor:'transparent',borderWidth:1,pointRadius:0});
+  charts.trend=new Chart(ctx,{type:'line',data:{labels:MONTHS,datasets},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8b8fa8',font:{size:10},boxWidth:8,boxHeight:2}}},scales:{x:{ticks:{color:'#555870',font:{size:10},maxRotation:45},grid:{color:'#2a2d38'}},y:{ticks:{color:'#555870'},grid:{color:'#2a2d38'},max:110}}}});
+}
+
+function buildRampChart(){
+  const ctx=document.getElementById('rampChart');if(!ctx)return;
+  if(charts.ramp)charts.ramp.destroy();
+  const r=[];for(let i=0;i<13;i++)r.push(Math.min(95,10+10*i));
+  charts.ramp=new Chart(ctx,{type:'line',data:{labels:['Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan 27','Feb 27','Mar 27','Apr 27','May 27','Jun 27'],datasets:[{label:'AC panel size',data:r,borderColor:'#bf86f5',backgroundColor:'rgba(191,134,245,.1)',fill:true,tension:.3,borderWidth:2,pointRadius:3},{label:'Full panel (95)',data:Array(13).fill(95),borderColor:'rgba(62,207,142,.35)',borderDash:[4,4],backgroundColor:'transparent',borderWidth:1,pointRadius:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8b8fa8',font:{size:11},boxWidth:10}}},scales:{x:{ticks:{color:'#555870'},grid:{color:'#2a2d38'}},y:{ticks:{color:'#555870'},grid:{color:'#2a2d38'},max:100}}}});
+}
+
+// ========== TA REFRESH ==========
+function refreshTA(){} // static for now, driven by fstate
+
+// ========== DASHBOARD REFRESH ==========
+function refreshDashboard(){
+  const f=fstate;
+  const oc=chiefs.filter(c=>c.load>c.max).length;
+  const q3delta=Math.round(((f.aQ3-f.bQ3)/f.bQ3)*100);
+  setText('d-q3',f.aQ3);
+  setText('d-ta',f.taQ4);
+  setText('d-oc',oc+' / '+chiefs.length);
+  setText('d-q3d',(q3delta>=0?'+':'')+q3delta+'% vs budget');
+
+  // Also check over-cap chiefs
+  const overCapChiefs = chiefs.filter(c=>c.load>c.max);
+
+  const banner = document.getElementById('d-hire-banner');
+  if(!banner) { buildChiefBarChart(); return; }
+
+  // ---- CAPACITY TIMELINE ANALYSIS ----
+  // For each chief, calculate when they hit their max (in month-index from May=0)
+  // Then determine: given the hiring lead time, when do we need a NEW chief to START
+  // so capacity doesn't get overwhelmed.
+
+  const totalLeadMonths = Math.round(hstate.weeksHire / 4.33) + hstate.monthsRamp;
+  const buf = hstate.buf / 100;
+
+  // Build per-chief cap schedule
+  const schedule = chiefs.map(c => {
+    const capIdx = monthHitsCap(c); // month index when hits max. null = never. -1 = already over.
+    const stretchIdx = c.growth > 0 ? (1 + Math.ceil((c.stretch - c.load) / c.growth)) : null;
+    return { c, capIdx, stretchIdx };
+  });
+
+  // Find the EARLIEST cap date across all chiefs (this is when we NEED a new chief in seat)
+  // Exclude chiefs with no growth and not over cap — they won't drive the need
+  const growing = schedule.filter(s => s.capIdx !== null);
+  const overCap = schedule.filter(s => s.capIdx === -1);
+
+  // Sort growing chiefs by cap date ascending
+  growing.sort((a,b) => a.capIdx - b.capIdx);
+
+  // The first one to cap determines when a new chief must START
+  // A new chief should start `totalLeadMonths` before that cap date
+  const firstToCap = growing[0] || null;
+  const newChiefMustStartIdx = firstToCap ? Math.max(0, firstToCap.capIdx - totalLeadMonths) : null;
+  const newChiefMustStartLabel = newChiefMustStartIdx !== null ? moLabel(newChiefMustStartIdx) : null;
+
+  // Build the per-chief summary rows for the banner detail section
+  const capRows = [
+    ...overCap.map(s => ({
+      name: s.c.name, role: s.c.role,
+      label: 'Already over max', color: '#f07b76', urgent: true
+    })),
+    ...growing.map(s => ({
+      name: s.c.name, role: s.c.role,
+      label: `Hits max: ${moLabel(s.capIdx)}`,
+      color: s.capIdx <= 3 ? '#f07b76' : s.capIdx <= 6 ? '#f5b84a' : '#8b8fa8',
+      urgent: s.capIdx <= 3
+    })),
+    ...schedule.filter(s => s.capIdx === null && s.c.growth === 0 && s.c.load <= s.c.max).map(s => ({
+      name: s.c.name, role: s.c.role,
+      label: 'Stable — no growth',
+      color: '#555870', urgent: false
+    }))
+  ];
+
+  // Top-level status only — no per-chief breakdown
+  const isOverCap = overCap.length > 0;
+  const isNow = newChiefMustStartIdx === 0;
+  const isUrgent = newChiefMustStartIdx !== null && newChiefMustStartIdx <= 2;
+
+  const bg    = isOverCap||isNow ? 'rgba(232,80,74,.12)' : isUrgent ? 'rgba(245,166,35,.1)' : 'rgba(91,142,240,.08)';
+  const bdr   = isOverCap||isNow ? 'rgba(232,80,74,.35)' : isUrgent ? 'rgba(245,166,35,.3)' : 'rgba(91,142,240,.22)';
+  const icon  = isOverCap||isNow ? '🚨' : isUrgent ? '⚠️' : '📅';
+  const color = isOverCap||isNow ? '#f07b76' : isUrgent ? '#f5b84a' : '#7aa5f3';
+
+  let line1, line2;
+  if (isOverCap || isNow) {
+    line1 = 'Next chief hire';
+    line2 = 'Now';
+  } else if (newChiefMustStartLabel) {
+    line1 = 'Next chief should start by';
+    line2 = newChiefMustStartLabel;
+  } else {
+    line1 = 'Next chief hire';
+    line2 = 'Set growth rates in Manage Chiefs';
+  }
+
+  banner.innerHTML = `
+    <div style="background:${bg};border:1.5px solid ${bdr};border-radius:12px;padding:16px 22px;display:flex;align-items:center;gap:16px">
+      <span style="font-size:24px;flex-shrink:0">${icon}</span>
+      <div>
+        <div style="font-size:12px;color:var(--text3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px">${line1}</div>
+        <div style="font-size:22px;font-weight:700;color:${color};letter-spacing:-.01em">${line2}</div>
+      </div>
+    </div>`;
+
+  // ---- QUARTERLY TABLE ----
+  const qdata=[
+    {q:'Q1 2026 (Jan–Mar)',budget:f.bQ1,actual:f.aQ1,ta:null,note:''},
+    {q:'Q2 2026 (Apr–Jun)',budget:f.bQ2,actual:f.aQ2,ta:null,note:''},
+    {q:'Q3 2026 (Jul–Sep)',budget:f.bQ3,actual:f.aQ3,ta:f.taQ3,note:'TA proj was 135, actual 115'},
+    {q:'Q4 2026 (Oct–Dec)',budget:f.bQ4,actual:f.aQ4+'*',ta:f.taQ4,note:'*partial — Oct/Nov only'},
+    {q:'Full Year 2026',budget:f.bQ1+f.bQ2+f.bQ3+f.bQ4,actual:(f.aQ1+f.aQ2+f.aQ3+f.aQ4)+'*',ta:f.taQ3+f.taQ4,note:''},
+  ];
+  const el=document.getElementById('d-qrows');
+  if(el)el.innerHTML=
+    `<div style="display:grid;grid-template-columns:1fr 60px 60px 60px;font-size:10px;font-family:var(--mono);color:var(--text3);padding:0 0 8px;border-bottom:1px solid var(--border);margin-bottom:4px;gap:8px">
+      <span>Quarter</span><span style="color:#5b8ef0;text-align:right">Budget</span><span style="color:#3ecf8e;text-align:right">Actual</span><span style="color:#bf86f5;text-align:right">TA Proj</span>
+    </div>`+
+    qdata.map(r=>`<div style="display:grid;grid-template-columns:1fr 60px 60px 60px;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px;gap:8px;align-items:center">
+      <span style="color:var(--text2);font-size:12px">${r.q}</span>
+      <span style="color:#5b8ef0;font-family:var(--mono);font-size:12px;text-align:right">${r.budget}</span>
+      <span style="color:#3ecf8e;font-family:var(--mono);font-size:12px;text-align:right">${r.actual}</span>
+      <span style="color:#bf86f5;font-family:var(--mono);font-size:12px;text-align:right">${r.ta!==null?r.ta:'—'}</span>
+    </div>`).join('');
+  buildChiefBarChart();
+}
+
+// ========== FORECAST REFRESH ==========
+function refreshForecast(){
+  const f=fstate,n=chiefs.length;
+  const ytd=f.aQ1+f.aQ2+f.aQ3,fy=ytd+f.aQ4;
+  const annBudget=f.bQ1+f.bQ2+f.bQ3+f.bQ4;
+  setText('fc-ab',annBudget);setText('fc-ytd',ytd);setText('fc-fy','~'+(ytd+f.taQ4));setText('fc-ta',f.taQ4);
+  setText('fc-q3',f.aQ3);setText('fc-q4','~'+f.taQ4);setText('fc-tot','~'+(ytd+f.taQ4));
+  const ytdBudget=f.bQ1+f.bQ2+f.bQ3;
+  setText('fc-ytdd',(ytd>ytdBudget?'+':'')+Math.round(((ytd-ytdBudget)/ytdBudget)*100)+'% vs budget YTD');
+  ['fc-s1c','fc-s2c','fc-s3c'].forEach(id=>setText(id,n));
+  setText('fc-s1g','+'+(n-Math.ceil(annBudget/85))+' surplus');
+  setText('fc-s2g','+'+(n-Math.ceil(ytd/85))+' surplus');
+  const active=sysTotals()[1],need=Math.ceil(active/85),gap=n-need;
+  setText('fc-s3p',active);setText('fc-s3n','~'+need);
+  setText('fc-s3g',(gap>=0?'+':'')+gap);
+  const gapEl=document.getElementById('fc-s3g');if(gapEl)gapEl.style.color=gap<0?'var(--danger)':'var(--accent2)';
+  const statEl=document.getElementById('fc-s3s');if(statEl)statEl.innerHTML=gap<0?'<span class="pill danger">Deficit</span>':gap<=1?'<span class="pill warn">Near limit</span>':'<span class="pill good">OK</span>';
+  buildForecastChart();
+}
+
+function setText(id,v){const el=document.getElementById(id);if(el)el.textContent=v;}
+
+// ========== INPUTS ==========
+// ========== MULTI-YEAR DATA SYSTEM ==========
+// yearDB: keyed by year string. Each entry has budget, actuals, ta per quarter + archived flag.
+let yearDB = {
+  '2026': {
+    archived: false,
+    budget:  { Q1:87,  Q2:95,  Q3:139, Q4:78  },
+    actuals: { Q1:84,  Q2:100, Q3:115, Q4:13  },
+    ta:      { Q1:null,Q2:null,Q3:135, Q4:59  },
+    notes:   'Actuals through Q3. Q4 partial (Oct/Nov only).'
+  }
+};
+let activeYear = '2026';
+
+function getActiveYearData() { return yearDB[activeYear]; }
+
+// Sync fstate from the active year so all charts/dashboards stay live
+function syncFstateFromYear() {
+  const d = getActiveYearData();
+  if(!d) return;
+  fstate.bQ1 = d.budget.Q1 || 0;
+  fstate.bQ2 = d.budget.Q2 || 0;
+  fstate.bQ3 = d.budget.Q3 || 0;
+  fstate.bQ4 = d.budget.Q4 || 0;
+  fstate.aQ1 = d.actuals.Q1 || 0;
+  fstate.aQ2 = d.actuals.Q2 || 0;
+  fstate.aQ3 = d.actuals.Q3 || 0;
+  fstate.aQ4 = d.actuals.Q4 || 0;
+  fstate.taQ3 = d.ta.Q3 || 0;
+  fstate.taQ4 = d.ta.Q4 || 0;
+  refreshDashboard();
+  refreshForecast();
+}
+
+function addYear() {
+  const existing = Object.keys(yearDB).map(Number).sort((a,b)=>b-a);
+  const next = String((existing[0] || 2026) + 1);
+  if(yearDB[next]) { setActiveYear(next); return; }
+  yearDB[next] = {
+    archived: false,
+    budget:  { Q1:null, Q2:null, Q3:null, Q4:null },
+    actuals: { Q1:null, Q2:null, Q3:null, Q4:null },
+    ta:      { Q1:null, Q2:null, Q3:null, Q4:null },
+    notes: ''
+  };
+  setActiveYear(next);
+  renderInputsPage();
+}
+
+function setActiveYear(yr) {
+  activeYear = yr;
+  syncFstateFromYear();
+  renderInputsPage();
+}
+
+function archiveYear(yr) {
+  if(!confirm(`Archive ${yr}? It will be stored for reference but no longer editable as the active year.`)) return;
+  yearDB[yr].archived = true;
+  // If archiving the active year, switch to the most recent non-archived year
+  if(activeYear === yr) {
+    const live = Object.keys(yearDB).filter(y => !yearDB[y].archived).sort().reverse();
+    activeYear = live[0] || yr;
+  }
+  syncFstateFromYear();
+  renderInputsPage();
+}
+
+function unarchiveYear(yr) {
+  yearDB[yr].archived = false;
+  renderInputsPage();
+}
+
+function deleteYear(yr) {
+  if(Object.keys(yearDB).length <= 1) { alert('Cannot delete the only year.'); return; }
+  if(!confirm(`Delete all data for ${yr}? This cannot be undone.`)) return;
+  delete yearDB[yr];
+  if(activeYear === yr) {
+    activeYear = Object.keys(yearDB).sort().reverse()[0];
+  }
+  syncFstateFromYear();
+  renderInputsPage();
+}
+
+function saveYearField(yr, section, quarter, value) {
+  const num = value === '' ? null : parseFloat(value);
+  yearDB[yr][section][quarter] = isNaN(num) ? null : num;
+  if(yr === activeYear) syncFstateFromYear();
+}
+
+function saveYearNotes(yr, value) {
+  yearDB[yr].notes = value;
+}
+
+function renderInputsPage() {
+  const tabsEl = document.getElementById('year-tabs');
+  const panelEl = document.getElementById('year-data-panel');
+  const archiveEl = document.getElementById('archive-panel');
+  if(!tabsEl || !panelEl || !archiveEl) return;
+
+  const years = Object.keys(yearDB).sort();
+  const liveYears = years.filter(y => !yearDB[y].archived);
+  const archivedYears = years.filter(y => yearDB[y].archived);
+
+  // Year tabs (live only)
+  tabsEl.innerHTML = liveYears.map(yr => `
+    <button onclick="setActiveYear('${yr}')" style="
+      padding:6px 16px;border-radius:20px;font-size:13px;cursor:pointer;font-family:var(--mono);
+      border:1.5px solid ${yr===activeYear?'var(--accent)':'var(--border)'};
+      background:${yr===activeYear?'rgba(91,142,240,.15)':'var(--surface2)'};
+      color:${yr===activeYear?'var(--accent)':'var(--text2)'};
+      font-weight:${yr===activeYear?'600':'400'}">
+      ${yr}
+    </button>`).join('');
+
+  // Active year panel
+  const d = yearDB[activeYear];
+  const qs = ['Q1','Q2','Q3','Q4'];
+  const qLabels = { Q1:'Jan–Mar', Q2:'Apr–Jun', Q3:'Jul–Sep', Q4:'Oct–Dec' };
+
+  const makeRow = (label, section, hint='') => `
+    <tr>
+      <td class="td-name" style="font-size:13px">${label}${hint?`<div class="input-hint" style="margin-top:2px">${hint}</div>`:''}</td>
+      ${qs.map(q=>`
+        <td style="padding:8px 12px">
+          <input type="number" class="ie" style="width:80px"
+            value="${d[section][q] !== null && d[section][q] !== undefined ? d[section][q] : ''}"
+            placeholder="—"
+            onchange="saveYearField('${activeYear}','${section}','${q}',this.value)"
+            oninput="saveYearField('${activeYear}','${section}','${q}',this.value)">
+        </td>`).join('')}
+    </tr>`;
+
+  panelEl.innerHTML = `
+    <div class="input-section" style="margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+        <div class="input-section-title" style="margin-bottom:0">${activeYear} — Data Entry</div>
+        <div style="display:flex;gap:8px">
+          <button class="btn ghost" style="font-size:12px;padding:6px 14px" onclick="archiveYear('${activeYear}')">Archive ${activeYear}</button>
+          ${Object.keys(yearDB).length > 1 ? `<button class="btn dbtn" style="font-size:12px;padding:6px 14px" onclick="deleteYear('${activeYear}')">Delete</button>` : ''}
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr>
+            <th style="width:200px">Category</th>
+            ${qs.map(q=>`<th style="text-align:center">${q}<div style="font-weight:400;color:var(--text3)">${qLabels[q]}</div></th>`).join('')}
+          </tr></thead>
+          <tbody>
+            ${makeRow('Finance Budget','budget','MD + PMHNP HC starts (from ramp model)')}
+            ${makeRow('Actual Starts','actuals','MD + PMHNP only — no therapy')}
+            ${makeRow('TA Projection','ta','What Talent Acquisition projected')}
+          </tbody>
+        </table>
+      </div>
+      <div style="margin-top:16px">
+        <div class="input-label" style="margin-bottom:6px">Notes</div>
+        <input type="text" style="width:100%;max-width:600px" value="${d.notes||''}"
+          placeholder="e.g. Q4 partial — Dec cohort not yet started"
+          oninput="saveYearNotes('${activeYear}',this.value)">
+      </div>
+      <div style="margin-top:12px;font-size:12px;color:var(--text3);font-family:var(--mono)">
+        Changes apply immediately to Dashboard and Forecast views.
+      </div>
+    </div>`;
+
+  // Archive section
+  if(archivedYears.length === 0) {
+    archiveEl.innerHTML = `<div style="font-size:13px;color:var(--text3)">No archived years yet.</div>`;
+  } else {
+    archiveEl.innerHTML = archivedYears.map(yr => {
+      const ad = yearDB[yr];
+      const totBudget = Object.values(ad.budget).reduce((s,v)=>s+(v||0),0);
+      const totActual = Object.values(ad.actuals).reduce((s,v)=>s+(v||0),0);
+      return `
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin-bottom:12px">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+            <div>
+              <div style="font-size:15px;font-weight:600;color:var(--text2)">${yr} <span style="font-size:11px;font-family:var(--mono);color:var(--text3);background:var(--surface2);padding:2px 8px;border-radius:10px;margin-left:6px">Archived</span></div>
+              <div style="font-size:12px;color:var(--text3);margin-top:4px;font-family:var(--mono)">
+                Budget: ${totBudget} · Actuals: ${totActual} · TA Q3: ${ad.ta.Q3||'—'} · TA Q4: ${ad.ta.Q4||'—'}
+                ${ad.notes ? ' · ' + ad.notes : ''}
+              </div>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button class="btn ghost" style="font-size:12px;padding:5px 12px" onclick="unarchiveYear('${yr}')">Restore</button>
+              <button class="btn dbtn" style="font-size:12px;padding:5px 12px" onclick="deleteYear('${yr}')">Delete</button>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px">
+            ${['Q1','Q2','Q3','Q4'].map(q=>`
+              <div style="background:var(--surface2);border-radius:6px;padding:8px 12px">
+                <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:4px">${q} ${qLabels[q]}</div>
+                <div style="font-size:12px;color:var(--text2);font-family:var(--mono)">
+                  Budget: <span style="color:#5b8ef0">${ad.budget[q]||'—'}</span><br>
+                  Actual: <span style="color:#3ecf8e">${ad.actuals[q]||'—'}</span><br>
+                  TA: <span style="color:#bf86f5">${ad.ta[q]||'—'}</span>
+                </div>
+              </div>`).join('')}
+          </div>
+        </div>`;
+    }).join('');
+  }
+}
+
+// Keep old applyInputs/resetInputs as thin wrappers so nothing else breaks
+function applyInputs() { syncFstateFromYear(); }
+function resetInputs() {
+  yearDB['2026'] = {
+    archived: false,
+    budget:  { Q1:87,  Q2:95,  Q3:139, Q4:78  },
+    actuals: { Q1:84,  Q2:100, Q3:115, Q4:13  },
+    ta:      { Q1:null,Q2:null,Q3:135, Q4:59  },
+    notes: 'Actuals through Q3. Q4 partial (Oct/Nov only).'
+  };
+  activeYear = '2026';
+  syncFstateFromYear();
+  renderInputsPage();
+}
+
+// ========== INIT ==========
+window.addEventListener('load',()=>{
+  buildMonthlyChart();buildChiefBarChart();buildForecastChart();buildRampChart();
+  buildChiefTable();buildManage();buildAlerts();buildHiring();
+  refreshDashboard();addCohortRow();
+});
+</script>
+</body>
+</html>
